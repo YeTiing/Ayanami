@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import type { RightPanelTab } from '@/types';
+import type { RightPanelTab } from '@/types'
+import ComputerUse from '@/components/ComputerUse/ComputerUse'
+import BrowserPanel from '@/components/Browser/BrowserPanel';
 
-const TABS: RightPanelTab[] = ['files', 'context', 'preview', 'terminal', 'output', 'diff'];
+const TABS: (RightPanelTab | 'computer' | 'browser')[] = ['files', 'context', 'preview', 'terminal', 'output', 'diff', 'computer', 'browser'];
 
-const tabContent: Record<RightPanelTab, React.ReactNode> = {
+const tabContent: Record<string, React.ReactNode> = {
   files: (
     <div className="p-3">
       <p className="text-sm text-[#94a3b8] mb-3">工作区文件列表</p>
@@ -69,6 +71,12 @@ const tabContent: Record<RightPanelTab, React.ReactNode> = {
       </div>
     </div>
   ),
+  computer: (
+    <ComputerUse />
+  ),
+  browser: (
+    <BrowserPanel />
+  ),
   diff: (
     <div className="p-3">
       <p className="text-sm text-[#94a3b8]">代码差异对比</p>
@@ -91,7 +99,7 @@ const tabContent: Record<RightPanelTab, React.ReactNode> = {
 };
 
 const RightPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<RightPanelTab>('files');
+  const [activeTab, setActiveTab] = useState<RightPanelTab | 'computer' | 'browser'>('files');
 
   return (
     <div className="flex flex-col h-full bg-[#1a1a2e] border-l border-[#2d2d4a]">

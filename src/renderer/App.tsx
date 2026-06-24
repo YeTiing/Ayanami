@@ -1,13 +1,15 @@
-﻿import React, { useState } from 'react'
+import React, { useState } from 'react'
 import Titlebar from './components/Titlebar'
 import Sidebar from './components/Sidebar/Sidebar'
 import { ThreadView } from './components/ThreadView/ThreadView'
 import { Composer } from './components/Composer/Composer'
 import RightPanel from './components/RightPanel/RightPanel'
+import SettingsModal from './components/Settings/SettingsModal'
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [rightPanelOpen, setRightPanelOpen] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
     <div className="h-full flex flex-col">
@@ -16,6 +18,7 @@ export default function App() {
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         rightPanelOpen={rightPanelOpen}
         onToggleRightPanel={() => setRightPanelOpen(!rightPanelOpen)}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -36,6 +39,8 @@ export default function App() {
           </div>
         )}
       </div>
+
+      {settingsOpen && <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }

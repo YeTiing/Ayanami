@@ -1,7 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 
-// ---- Icons (inline SVG) ----
-
 function MenuIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -15,6 +13,15 @@ function PanelRightIcon() {
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
       <rect x="1" y="2" width="14" height="12" rx="1.5" />
       <path d="M10 2v12" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function SettingsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="8" cy="8" r="2.5" />
+      <path d="M8 1.5v1.5M8 13v1.5M2.5 3.5l1.3 1.3M12.2 11.2l1.3 1.3M1.5 8H3M13 8h1.5M3.8 4.8l-.3-1.3M12.5 12.5l.3 1.3M4.8 12.2l-1.3 1.3M11.2 3.8l1.3-1.3" strokeLinecap="round" />
     </svg>
   )
 }
@@ -52,29 +59,23 @@ function CloseIcon() {
   )
 }
 
-// ---- Window API type ----
-
-// [auto-fixed] using shared type from @/types/electron.d.ts
-
-// ---- Props ----
-
 interface TitlebarProps {
   sidebarOpen: boolean
   onToggleSidebar: () => void
   rightPanelOpen: boolean
   onToggleRightPanel: () => void
+  onOpenSettings: () => void
 }
-
-// ---- Component ----
 
 export default function Titlebar({
   sidebarOpen: _sidebarOpen,
   onToggleSidebar,
   rightPanelOpen,
   onToggleRightPanel,
+  onOpenSettings,
 }: TitlebarProps) {
   const [maximized, setMaximized] = useState(false)
-  const api = window.ayanami?.window
+  const api = (window as any).ayanami?.window
 
   useEffect(() => {
     if (!api) return
@@ -88,58 +89,35 @@ export default function Titlebar({
 
   return (
     <div className="h-[36px] bg-surface-dark border-b border-border flex items-center select-none flex-shrink-0">
-      {/* Left */}
       <div className="flex items-center h-full">
-        <button
-          onClick={onToggleSidebar}
-          className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag"
-          title="切换侧边栏"
-        >
+        <button onClick={onToggleSidebar} className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag" title="切换侧边栏">
           <MenuIcon />
         </button>
-        <span className="text-text-primary text-sm font-medium tracking-wide pl-1 pr-4">
-          Ayanami
-        </span>
+        <span className="text-text-primary text-sm font-medium tracking-wide pl-1 pr-4">Ayanami</span>
       </div>
 
-      {/* Center: drag region */}
       <div className="flex-1 h-full titlebar-drag" />
 
-      {/* Right */}
       <div className="flex items-center h-full">
-        <button
-          onClick={onToggleRightPanel}
-          className={`h-full px-3 transition-colors titlebar-no-drag ${
-            rightPanelOpen
-              ? 'text-accent bg-surface-light'
-              : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'
-          }`}
-          title="切换右侧面板"
-        >
+        <button onClick={onOpenSettings} className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag" title="设置">
+          <SettingsIcon />
+        </button>
+
+        <div className="w-px h-4 bg-border mx-0.5" />
+
+        <button onClick={onToggleRightPanel} className={`h-full px-3 transition-colors titlebar-no-drag ${rightPanelOpen ? 'text-accent bg-surface-light' : 'text-text-secondary hover:text-text-primary hover:bg-surface-light'}`} title="切换右侧面板">
           <PanelRightIcon />
         </button>
 
         <div className="w-px h-4 bg-border mx-0.5" />
 
-        <button
-          onClick={handleMinimize}
-          className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag"
-          title="最小化"
-        >
+        <button onClick={handleMinimize} className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag" title="最小化">
           <MinimizeIcon />
         </button>
-        <button
-          onClick={handleMaximize}
-          className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag"
-          title={maximized ? '还原' : '最大化'}
-        >
+        <button onClick={handleMaximize} className="h-full px-3 text-text-secondary hover:text-text-primary hover:bg-surface-light transition-colors titlebar-no-drag" title={maximized ? '还原' : '最大化'}>
           {maximized ? <RestoreIcon /> : <MaximizeIcon />}
         </button>
-        <button
-          onClick={handleClose}
-          className="h-full px-3 text-text-secondary hover:text-white hover:bg-red-600 transition-colors titlebar-no-drag"
-          title="关闭"
-        >
+        <button onClick={handleClose} className="h-full px-3 text-text-secondary hover:text-white hover:bg-red-600 transition-colors titlebar-no-drag" title="关闭">
           <CloseIcon />
         </button>
       </div>
