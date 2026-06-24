@@ -11,25 +11,39 @@
 
 ---
 
-## 功能总览
+# 🌊 Ayanami
 
-| 模块 | 状态 | 说明 |
+**Desktop AI Coding Assistant** — 仿 OpenAI Codex Desktop 的独立实现。
+
+[![Stack](https://img.shields.io/badge/Electron-33-47848f?logo=electron)](https://www.electronjs.org/)
+[![React](https://img.shields.io/badge/React-18-61dafb?logo=react)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript)](https://www.typescriptlang.org/)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776ab?logo=python)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi)](https://fastapi.tiangolo.com/)
+[![Tailwind](https://img.shields.io/badge/Tailwind-3-06b6d4?logo=tailwindcss)](https://tailwindcss.com/)
+
+---
+
+## 实现状态
+
+| 模块 | 深度 | 说明 |
 |------|:----:|------|
-| **三栏布局** | ✅ | Sidebar（对话列表） + ThreadView（消息区） + RightPanel（6标签） |
-| **8种消息渲染** | ✅ | Markdown / 代码高亮 / Diff / Thinking折叠 / Plan步骤 / ToolCall / Artifact / Error |
-| **Composer** | ✅ | 多行输入 + Model / Sandbox / Permission / Reasoning 下拉 + 停止/发送 |
-| **SSE流式对话** | ✅ | 17种事件类型，前端 `useSSEStream` Hook 实时接收 |
-| **Python后端** | ✅ | FastAPI SSE代理 + shell_command/apply_patch工具执行 |
-| **多Provider** | ✅ | config.toml 配置，支持自定义 API 地址，OpenAI兼容 |
-| **设置页** | ✅ | 14个分类（通用/外观/模型/Agent/API等）+ 齿轮入口 |
-| **i18n** | ✅ | 中英双语，90+ keys，按Tab键即可在Repo中切换 |
-| **Computer Use** | ✅ | pyautogui + Named Pipe JSON-RPC，截屏/键鼠控制 |
-| **Browser Use** | ✅ | Playwright CDP，导航/截图/点击/JS执行 |
-| **子Agent** | ✅ | 10种角色（architect/explorer/worker/reviewer等），并发上限3 |
-| **审批系统** | ✅ | 9种审批类型 × 4级模式（default/autoReview/fullAccess/guardian） |
-| **自动化** | ✅ | Cron / RRULE / Interval 三种调度 |
-| **Goal追踪** | ✅ | Token预算 + 步骤管理 + blocked audit |
-| **数据库** | ✅ | 5个SQLite（state/memories/goals/logs/automations）19张表 |
+| **三栏布局** | ████ | 完整: Sidebar + ThreadView + Composer + RightPanel |
+| **8种消息渲染** | ████ | 完整: Markdown/代码高亮/Diff/Thinking/Plan/ToolCall/Artifact/Error |
+| **Composer** | ████ | 完整: Model/Sandbox/Permission/Reasoning下拉 + 停止/发送 |
+| **SSE流式对话** | ███░ | 前后端SSE事件对接完成，待接入真实LLM API验证 |
+| **Python后端** | ████ | 完整: FastAPI SSE代理 + Provider工厂 + 配置加载 |
+| **apply_patch** | ██░░ | 待实现真实diff解析与文件写入 (目前为占位) |
+| **shell_command** | ███░ | 可用，待加强workspace安全边界 |
+| **设置页** | ███░ | 14分类框架完整，5类已接入store，其余占位 |
+| **i18n** | ████ | 完整: 中英双语90+keys |
+| **Computer Use** | ██░░ | 后端模块完整，前端面板已接入，未联调测试 |
+| **Browser Use** | ██░░ | 后端模块完整，前端面板已接入，未联调测试 |
+| **子Agent** | ██░░ | 后端AgentManager + API路由完整，前端未实现 |
+| **审批系统** | ██░░ | 后端完整(9类型×4模式)，前端审批弹窗未实现 |
+| **自动化** | █░░░ | 后端框架完成，未联调调度循环 |
+| **Goal/Budget** | ██░░ | 后端完整，前端可视化未实现 |
+| **数据库(5库)** | ███░ | Schema完整，未全链路接入业务逻辑 |
 
 ---
 
@@ -71,6 +85,7 @@ cd Ayanami
 
 # 2. 前端
 npm install
+npm run build        # 构建前端 (Vite)
 npm run dev          # Vite dev server → http://localhost:5173
 
 # 3. 后端（新终端）

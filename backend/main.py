@@ -1,4 +1,4 @@
-"""Ayanami Backend - FastAPI entry point."""
+﻿"""Ayanami Backend - FastAPI entry point."""
 import sys
 import argparse
 from pathlib import Path
@@ -9,7 +9,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from ayanami.api.routes import router
+from ayanami.api.routes import router as core_router
+from ayanami.api.routes_agents import router as agents_router
+from ayanami.api.routes_approval import router as approval_router
+from ayanami.api.routes_automation import router as automation_router
+from ayanami.api.routes_goals import router as goals_router
+from ayanami.api.browser_routes import router as browser_router
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -24,7 +29,12 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    app.include_router(router)
+    app.include_router(core_router)
+    app.include_router(agents_router)
+    app.include_router(approval_router)
+    app.include_router(automation_router)
+    app.include_router(goals_router)
+    app.include_router(browser_router)
     return app
 
 app = create_app()
