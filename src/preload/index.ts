@@ -1,4 +1,4 @@
-﻿import { contextBridge, ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 
 contextBridge.exposeInMainWorld('ayanami', {
   window: {
@@ -12,6 +12,11 @@ contextBridge.exposeInMainWorld('ayanami', {
   },
   shell: {
     exec: (command: string, cwd?: string) => ipcRenderer.invoke('shell:exec', command, cwd),
+  },
+  config: {
+    read: () => ipcRenderer.invoke('config:read'),
+    write: (updates: Record<string, unknown>) => ipcRenderer.invoke('config:write', updates),
+    healthCheck: (url: string) => ipcRenderer.invoke('config:healthCheck', url),
   },
   platform: process.platform,
 })

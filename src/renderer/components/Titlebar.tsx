@@ -54,20 +54,7 @@ function CloseIcon() {
 
 // ---- Window API type ----
 
-declare global {
-  interface Window {
-    ayanami?: {
-      window: {
-        minimize: () => Promise<void>
-        maximize: () => Promise<void>
-        close: () => Promise<void>
-        isMaximized: () => Promise<boolean>
-        onMaximizeChange: (cb: (maximized: boolean) => void) => void
-      }
-      platform: string
-    }
-  }
-}
+// [auto-fixed] using shared type from @/types/electron.d.ts
 
 // ---- Props ----
 

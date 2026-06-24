@@ -2,21 +2,48 @@
 // Ayanami - Shared Type Definitions
 // ============================================================
 
+// ---- Provider / Config Types ----
+
+export interface ModelProvider {
+  name: string
+  wire_api: string
+  base_url: string
+  api_key?: string
+  models?: string[]
+}
+
+export interface AppConfig {
+  model: string
+  model_provider: string
+  providers: Record<string, ModelProvider>
+  sandbox_mode: string
+  permission_mode: string
+  available_models?: string[]
+}
+
+export interface ProviderStatus {
+  name: string
+  reachable: boolean
+  latency_ms: number | null
+  error?: string
+}
+
 // ---- Model Options ----
 
-export type ModelId = 'gpt-5.5' | 'gpt-5.4' | 'gpt-5.4-mini' | 'deepseek-v4-pro'
+export type ModelId = 'gpt-5.5' | 'gpt-5.4' | 'gpt-5.4-mini' | 'deepseek-v4-pro' | string
 
 export interface ModelOption {
   id: ModelId
   label: string
   description: string
+  provider: string
 }
 
 export const MODEL_OPTIONS: ModelOption[] = [
-  { id: 'gpt-5.5', label: 'GPT 5.5', description: 'Frontier model' },
-  { id: 'gpt-5.4', label: 'GPT 5.4', description: 'Strong everyday coding' },
-  { id: 'gpt-5.4-mini', label: 'GPT 5.4 Mini', description: 'Fast & efficient' },
-  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', description: 'Custom provider' },
+  { id: 'gpt-5.5', label: 'GPT 5.5', description: 'Frontier model', provider: 'openai' },
+  { id: 'gpt-5.4', label: 'GPT 5.4', description: 'Strong everyday coding', provider: 'openai' },
+  { id: 'gpt-5.4-mini', label: 'GPT 5.4 Mini', description: 'Fast & efficient', provider: 'openai' },
+  { id: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro', description: 'Custom provider', provider: 'custom' },
 ]
 
 // ---- Sandbox / Permissions ----
