@@ -1,6 +1,7 @@
 """Tool executor for Ayanami."""
 import asyncio
 import re
+import shlex
 from pathlib import Path
 from typing import List, Optional
 from .definitions import TOOL_DEFINITIONS
@@ -11,23 +12,32 @@ DANGEROUS_COMMANDS = [
     r"del\s+/[fF]\s+/[sS]",
     r"shutdown\b",
     r"reboot\b",
-    r":\(\)\s*\{",  # fork bomb
+    r":\(\)\s*\{",
     r"mkfs\.",
     r"dd\s+if=",
     r">\s*/dev/sd[a-z]",
 ]
+
+_NEED_SHELL_MARKERS = ["|", ">", "<", "&&", "||", ";"]
+
+
+def _needs_shell(command: str) -> bool:
+    return any(m in command for m in _NEED_SHELL_MARKERS)
+
 
 class ToolExecutor:
     def __init__(
         self,
         workspace_root: str = ".",
         allowed_paths: Optional[List[str]] = None,
+        allow_mkdir: bool = False,
     ):
         self.workspace_root = Path(workspace_root).resolve()
         if allowed_paths is None:
             self.allowed_paths = [self.workspace_root]
         else:
             self.allowed_paths = [Path(p).resolve() for p in allowed_paths]
+        self.allow_mkdir = allow_mkdir
 
     async def execute(self, tool_name: str, arguments: dict) -> dict:
         if tool_name == "shell_command":
@@ -51,14 +61,12 @@ class ToolExecutor:
             resolved = Path(workdir).resolve()
         except Exception:
             return f"Invalid workdir path: {workdir}"
-
         for allowed in self.allowed_paths:
             try:
                 resolved.relative_to(allowed)
                 return None
             except ValueError:
                 continue
-
         return (
             f"Security blocked: workdir '{workdir}' resolves to "
             f"'{resolved}', which is outside allowed paths: "
@@ -78,13 +86,28 @@ class ToolExecutor:
         if workdir_err:
             return {"call_id": f"shell_{id(command)}", "error": workdir_err}
 
-        try:
+        if _needs_shell(command):
+            kind = "subprocess_shell"
             proc = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=workdir,
             )
+        else:
+            kind = "subprocess_exec"
+            try:
+                argv = shlex.split(command)
+            except ValueError:
+                argv = command.split()
+            proc = await asyncio.create_subprocess_exec(
+                *argv,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                cwd=workdir,
+            )
+
+        try:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=timeout
             )
@@ -95,6 +118,11 @@ class ToolExecutor:
                 "exit_code": proc.returncode,
             }
         except asyncio.TimeoutError:
+            if proc.returncode is None:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
             return {
                 "call_id": f"shell_{id(command)}",
                 "error": f"Command timed out after {timeout}s",
@@ -104,6 +132,8 @@ class ToolExecutor:
                 "call_id": f"shell_{id(command)}",
                 "error": str(e),
             }
+
+    # ===== apply_patch =====
 
     def _parse_patch(self, patch: str) -> list:
         file_pattern = re.compile(
@@ -196,18 +226,31 @@ class ToolExecutor:
                 )
                 continue
 
+            is_new = not target.exists()
+
+            if is_new:
+                file_lines = []
+            else:
+                file_lines = target.read_text(encoding="utf-8").splitlines(keepends=True)
+
             file_added = 0
             file_removed = 0
-
-            if target.exists():
-                lines = target.read_text(encoding="utf-8").splitlines(keepends=True)
-            else:
-                lines = []
 
             for hunk in reversed(hunks):
                 old_start = hunk["old_start"]
                 old_len = hunk["old_len"]
                 hunk_lines = hunk["lines"]
+
+                # === CONTEXT MATCH VALIDATION ===
+                if not is_new and old_len > 0:
+                    context_err = self._verify_context(
+                        filepath, file_lines, old_start, hunk_lines
+                    )
+                    if context_err:
+                        return {
+                            "call_id": f"patch_{id(patch)}",
+                            "error": context_err,
+                        }
 
                 new_block = []
                 removed_in_hunk = 0
@@ -217,41 +260,77 @@ class ToolExecutor:
                     elif kind in ("add", "context"):
                         new_block.append(text)
 
-                if old_len == 0 and not target.exists():
+                if old_len == 0 and is_new:
                     pass
-                elif old_start - 1 <= len(lines):
+                elif old_start - 1 <= len(file_lines):
                     del_start = old_start - 1
-                    del lines[del_start : del_start + removed_in_hunk]
+                    del file_lines[del_start : del_start + removed_in_hunk]
                     for i, added_line in enumerate(new_block):
-                        lines.insert(del_start + i, added_line)
+                        file_lines.insert(del_start + i, added_line)
 
                 file_removed += removed_in_hunk
                 file_added += len([l for k, l in hunk_lines if k == "add"])
 
-            if not target.exists() and lines == []:
+            if is_new and file_lines == []:
                 new_lines = []
                 for hunk in hunks:
                     for kind, text in hunk["lines"]:
                         if kind in ("add", "context"):
                             new_lines.append(text)
-                lines = new_lines
+                file_lines = new_lines
                 file_added = len(new_lines)
 
-            target.parent.mkdir(parents=True, exist_ok=True)
+            if is_new:
+                parent = target.parent
+                if not parent.exists():
+                    if self.allow_mkdir:
+                        parent.mkdir(parents=True, exist_ok=True)
+                    else:
+                        report.append(
+                            f"SKIP {filepath}: parent dir '{parent}' missing "
+                            f"(mkdir requires approval / allow_mkdir=True)"
+                        )
+                        continue
+
             target.write_text(
-                "".join(line + "\n" for line in lines),
+                "".join(line + "\n" for line in file_lines),
                 encoding="utf-8",
             )
 
             total_added += file_added
             total_removed += file_removed
-            report.append(
-                f"{'NEW' if not target.exists() else 'OK'} {filepath}: "
-                f"+{file_added} -{file_removed}"
-            )
+            tag = "NEW" if is_new else "OK"
+            report.append(f"{tag} {filepath}: +{file_added} -{file_removed}")
 
         return {
             "call_id": f"patch_{id(patch)}",
             "output": "\n".join(report)
             + f"\nTotal: +{total_added} -{total_removed} lines across {len(parsed)} file(s)",
         }
+
+    def _verify_context(
+        self,
+        filepath: str,
+        file_lines: list,
+        old_start: int,
+        hunk_lines: list,
+    ) -> Optional[str]:
+        idx = old_start - 1
+        for kind, text in hunk_lines:
+            if kind != "context":
+                continue
+            if idx >= len(file_lines):
+                return (
+                    f"Context mismatch in {filepath}: expected "
+                    f"'{text}' at line {old_start}, but file is shorter "
+                    f"({len(file_lines)} lines)"
+                )
+            actual = file_lines[idx].rstrip("\n\r")
+            if actual != text:
+                return (
+                    f"Context mismatch in {filepath} line {old_start}: "
+                    f"expected '{text}' but got '{actual}'. "
+                    f"Patch may be stale — re-read the file first."
+                )
+            idx += 1
+        return None
