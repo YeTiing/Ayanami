@@ -1,7 +1,7 @@
-// ============================================================
+﻿// ============================================================
 // Ayanami – MessageList – 消息列表渲染
 // ============================================================
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -44,18 +44,13 @@ const MessageActions: React.FC<{ content: string }> = ({ content }) => {
       <button
         className="px-1.5 py-0.5 text-[11px] text-text-muted hover:text-text-secondary hover:bg-surface-light rounded transition-colors"
         title="复制"
-        onClick={() => { copyToClipboard(content); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        onClick={() => {
+          copyToClipboard(content)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 1500)
+        }}
       >
         {copied ? '✅' : '📋'}
-      </button>
-      <button className="px-1.5 py-0.5 text-[11px] text-text-muted hover:text-text-secondary hover:bg-surface-light rounded transition-colors" title="赞">
-        👍
-      </button>
-      <button className="px-1.5 py-0.5 text-[11px] text-text-muted hover:text-text-secondary hover:bg-surface-light rounded transition-colors" title="踩">
-        👎
-      </button>
-      <button className="px-1.5 py-0.5 text-[11px] text-text-muted hover:text-text-secondary hover:bg-surface-light rounded transition-colors" title="更多">
-        ⋯
       </button>
     </div>
   )
@@ -83,16 +78,28 @@ const UserBubble: React.FC<{ content: string; timestamp: number }> = ({ content,
 // 子组件：Markdown 文本
 // ═══════════════════════════════════════════════════════════════
 
-const MarkdownBlock: React.FC<{ content: string; timestamp: number }> = ({ content, timestamp }) => (
+const MarkdownBlock: React.FC<{ content: string; timestamp: number; partial?: boolean }> = ({
+  content,
+  timestamp,
+  partial,
+}) => (
   <div className="group">
-    <div className="prose prose-invert prose-sm max-w-none text-text-primary leading-relaxed
+    <div
+      className="prose prose-invert prose-sm max-w-none text-text-primary leading-relaxed
       prose-pre:bg-surface-dark prose-pre:border prose-pre:border-border
-      prose-code:text-accent-light prose-code:bg-surface-light prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+      prose-code:text-accent-light prose-code:bg-surface-light prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-[0.8125rem]
+      prose-code:before:content-none prose-code:after:content-none
       prose-a:text-accent-light prose-a:no-underline hover:prose-a:underline
-    ">
+      prose-table:border prose-table:border-border prose-th:border prose-th:border-border prose-td:border prose-td:border-border
+      prose-th:bg-surface-dark prose-th:px-3 prose-th:py-1.5 prose-th:text-xs prose-td:px-3 prose-td:py-1.5 prose-td:text-xs
+    "
+    >
       <ReactMarkdown remarkPlugins={[remarkGfm]}>
         {content}
       </ReactMarkdown>
+      {partial && (
+        <span className="inline-block w-1.5 h-4 ml-0.5 bg-gray-500 rounded-sm animate-pulse align-text-bottom" />
+      )}
     </div>
     <div className="flex items-center gap-2">
       <span className="text-[10px] text-text-muted">{fmtTime(timestamp)}</span>
@@ -111,40 +118,40 @@ const CodeBlock: React.FC<{ content: string; language?: string; fileName?: strin
   const [copied, setCopied] = useState(false)
   return (
     <div className="group">
-      {/* 头部 */}
-      <div className="flex items-center justify-between px-4 py-1.5 bg-surface-dark border border-border border-b-0 rounded-t-lg">
-        <div className="flex items-center gap-2">
-          {fileName && (
-            <span className="text-xs text-text-secondary font-mono">📄 {fileName}</span>
-          )}
-          {language && (
-            <span className="text-[10px] uppercase text-text-muted bg-surface-light px-1.5 py-0.5 rounded">
-              {language}
-            </span>
-          )}
+      <div className="rounded-lg overflow-hidden border border-border">
+        <div className="flex items-center justify-between px-4 py-1.5 bg-surface-dark border-b border-border">
+          <div className="flex items-center gap-2">
+            {fileName && (
+              <span className="text-xs text-text-secondary font-mono">📄 {fileName}</span>
+            )}
+            {language && (
+              <span className="text-[10px] uppercase text-text-muted bg-surface-light px-1.5 py-0.5 rounded">
+                {language}
+              </span>
+            )}
+          </div>
+          <button
+            className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"
+            onClick={() => { copyToClipboard(content); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+          >
+            {copied ? '✅ 已复制' : '📋 复制'}
+          </button>
         </div>
-        <button
-          className="text-[11px] text-text-muted hover:text-text-secondary transition-colors"
-          onClick={() => { copyToClipboard(content); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+        <SyntaxHighlighter
+          language={language || 'text'}
+          style={oneDark}
+          customStyle={{
+            margin: 0,
+            borderRadius: 0,
+            padding: '0.75rem 1rem',
+            fontSize: '0.8125rem',
+            background: '#12121f',
+          }}
+          showLineNumbers={content.split('\n').length > 3}
         >
-          {copied ? '✅ 已复制' : '📋 复制'}
-        </button>
+          {content}
+        </SyntaxHighlighter>
       </div>
-      {/* 代码 */}
-      <SyntaxHighlighter
-        language={language || 'text'}
-        style={oneDark}
-        customStyle={{
-          margin: 0,
-          borderRadius: '0 0 0.5rem 0.5rem',
-          padding: '0.75rem 1rem',
-          fontSize: '0.8125rem',
-          background: '#12121f',
-        }}
-        showLineNumbers={content.split('\n').length > 3}
-      >
-        {content}
-      </SyntaxHighlighter>
       <div className="flex items-center gap-2 mt-0.5">
         <span className="text-[10px] text-text-muted">{fmtTime(timestamp)}</span>
         <MessageActions content={content} />
@@ -170,8 +177,10 @@ const DiffBlock: React.FC<{ hunks: DiffHunk[]; fileName?: string; timestamp: num
       <div className="overflow-x-auto">
         <pre className="text-[0.8125rem] leading-relaxed font-mono p-0 m-0">
           {hunks.map((hunk, hi) => (
-            <div key={hi} className="px-2 py-1 text-[10px] text-text-muted bg-surface-dark/50 border-b border-border/50">
-              @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
+            <div key={hi}>
+              <div className="px-4 py-1 text-[10px] text-text-muted bg-surface-dark/50 border-b border-border/50 font-mono">
+                @@ -{hunk.oldStart},{hunk.oldLines} +{hunk.newStart},{hunk.newLines} @@
+              </div>
               {hunk.content.split('\n').map((line, li) => {
                 const cls = line.startsWith('+')
                   ? 'bg-green-900/20 text-green-400'
@@ -179,7 +188,7 @@ const DiffBlock: React.FC<{ hunks: DiffHunk[]; fileName?: string; timestamp: num
                     ? 'bg-red-900/20 text-red-400'
                     : 'text-text-secondary'
                 return (
-                  <div key={li} className={`px-4 py-0.5 ${cls}`}>
+                  <div key={li} className={`px-4 py-0.5 font-mono ${cls}`}>
                     {line || ' '}
                   </div>
                 )
@@ -208,7 +217,10 @@ const ThinkingBlock: React.FC<{ content: string; timestamp: number }> = ({ conte
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-surface-light border border-border text-xs text-text-muted hover:text-text-secondary transition-colors w-full text-left"
         onClick={() => setOpen(!open)}
       >
-        <span className="transform transition-transform" style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+        <span
+          className="transform transition-transform text-[10px]"
+          style={{ transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
           ▶
         </span>
         <span>🧠 思考中...</span>
@@ -252,7 +264,9 @@ const PlanBlock: React.FC<{ steps: PlanStep[]; timestamp: number }> = ({ steps, 
         <ul className="space-y-1.5">
           {steps.map((step) => (
             <li key={step.id} className="flex items-start gap-2 text-xs">
-              <span className={`mt-px ${step.status === 'in_progress' ? 'animate-pulse' : ''} ${statusColor[step.status]}`}>
+              <span
+                className={`mt-px ${step.status === 'in_progress' ? 'animate-pulse' : ''} ${statusColor[step.status]}`}
+              >
                 {statusIcon[step.status]}
               </span>
               <span className={statusColor[step.status]}>{step.text}</span>
@@ -292,7 +306,9 @@ const ToolCallBlock: React.FC<{
         </pre>
         {result && (
           <>
-            <div className="px-4 py-1 border-y border-border text-[10px] text-text-muted bg-surface-dark">输出:</div>
+            <div className="px-4 py-1 border-y border-border text-[10px] text-text-muted bg-surface-dark">
+              输出:
+            </div>
             <pre className="px-4 py-2 text-[0.8125rem] font-mono text-text-muted whitespace-pre-wrap break-all leading-relaxed max-h-48 overflow-y-auto">
               {result}
             </pre>
@@ -364,6 +380,34 @@ const ArtifactBlock: React.FC<{
 }
 
 // ═══════════════════════════════════════════════════════════════
+// 子组件：Error 错误消息
+// ═══════════════════════════════════════════════════════════════
+
+const ErrorBlock: React.FC<{ content: string; code?: string; timestamp: number }> = ({
+  content,
+  code,
+  timestamp,
+}) => (
+  <div className="group">
+    <div className="rounded-lg border border-red-900/40 bg-red-900/10 px-4 py-3">
+      <div className="flex items-center gap-2 mb-1.5">
+        <span className="text-sm">⚠️</span>
+        <span className="text-xs font-medium text-red-400">
+          错误{code ? ` (${code})` : ''}
+        </span>
+      </div>
+      <pre className="text-xs text-red-300/80 whitespace-pre-wrap leading-relaxed font-mono">
+        {content}
+      </pre>
+    </div>
+    <div className="flex items-center gap-2 mt-0.5">
+      <span className="text-[10px] text-text-muted">{fmtTime(timestamp)}</span>
+      <MessageActions content={content} />
+    </div>
+  </div>
+)
+
+// ═══════════════════════════════════════════════════════════════
 // 主组件：按 kind 分发
 // ═══════════════════════════════════════════════════════════════
 
@@ -375,7 +419,14 @@ export const MessageList: React.FC<Props> = ({ messages }) => (
           return <UserBubble key={msg.id} content={msg.content} timestamp={msg.timestamp} />
 
         case 'text':
-          return <MarkdownBlock key={msg.id} content={msg.content} timestamp={msg.timestamp} />
+          return (
+            <MarkdownBlock
+              key={msg.id}
+              content={msg.content}
+              timestamp={msg.timestamp}
+              partial={msg.partial}
+            />
+          )
 
         case 'code':
           return (
@@ -424,6 +475,16 @@ export const MessageList: React.FC<Props> = ({ messages }) => (
               language={msg.language}
               preview={msg.preview}
               content={msg.content}
+              timestamp={msg.timestamp}
+            />
+          )
+
+        case 'error':
+          return (
+            <ErrorBlock
+              key={msg.id}
+              content={msg.content}
+              code={msg.code}
               timestamp={msg.timestamp}
             />
           )

@@ -93,6 +93,7 @@ export interface UserMessage extends BaseMessage {
 export interface TextMessage extends BaseMessage {
   kind: 'text'
   content: string
+  partial?: boolean
 }
 
 export interface CodeMessage extends BaseMessage {

@@ -33,6 +33,7 @@ interface ConversationState {
   renameConversation: (id: string, title: string) => void
   addMessage: (message: Message) => void
   updateMessage: (id: string, updates: Partial<Message>) => void
+  appendToLastMessage: (delta: string) => void
   setThinking: (thinking: boolean) => void
 }
 
@@ -147,6 +148,26 @@ const useConversationStore = create<ConversationState>((set, get) => {
 
     setThinking: (thinking: boolean) => {
       set({ isThinking: thinking })
+    },
+
+    appendToLastMessage: (delta: string) => {
+      set((state) => {
+        const updated = state.conversations.map((c) => {
+          if (c.id !== state.activeConversationId) return c
+          const msgs = [...c.messages]
+          const last = msgs[msgs.length - 1]
+          if (!last) return c
+          const appended = { ...last, content: (last as { content: string }).content + delta } as Message
+          msgs[msgs.length - 1] = appended
+          return { ...c, messages: msgs, updatedAt: Date.now() }
+        })
+        const active = updated.find((c) => c.id === state.activeConversationId)
+        return {
+          conversations: updated,
+          messages: active?.messages ?? [],
+          activeId: state.activeConversationId,
+        }
+      })
     },
   }
 })

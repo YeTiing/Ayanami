@@ -4,6 +4,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import type { ModelId, SandboxMode, PermissionMode, ReasoningEffort } from '@/types'
 import { MODEL_OPTIONS } from '@/types'
+import { useSSEStream, type SSEStreamConfig } from '@/hooks/useSSEStream'
 
 // ── 下拉选项配置 ────────────────────────────────────────────
 
@@ -94,9 +95,9 @@ export const Composer: React.FC = () => {
   const [sandbox, setSandbox] = useState<SandboxMode>('danger-full-access')
   const [permission, setPermission] = useState<PermissionMode>('on-request')
   const [reasoning, setReasoning] = useState<ReasoningEffort>('off')
-  const [sending, setSending] = useState(false)
-
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { state: streamState, send: sseSend, stop: sseStop } = useSSEStream()
+  const sending = streamState === 'connecting' || streamState === 'streaming'
 
   // context window 进度（暂时固定值，后续接后端）
   const contextUsed = 12400
@@ -120,21 +121,9 @@ export const Composer: React.FC = () => {
     const trimmed = text.trim()
     if (!trimmed || sending) return
 
-    setSending(true)
-
-    console.log('[Composer] 发送消息:', {
-      content: trimmed,
-      model,
-      sandbox,
-      permission,
-      reasoning,
-    })
-
-    // 模拟异步发送
-    setTimeout(() => {
-      setText('')
-      setSending(false)
-    }, 300)
+    const config: SSEStreamConfig = { model, sandbox, permission, reasoning }
+    setText('')
+    sseSend(trimmed, config)
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -146,8 +135,7 @@ export const Composer: React.FC = () => {
   }
 
   const handleStop = () => {
-    console.log('[Composer] 停止生成')
-    setSending(false)
+    sseStop()
   }
 
   return (
